@@ -142,10 +142,19 @@ function authPopupPlugin(): Plugin {
   };
 }
 
+/**
+ * GitHub Pages build (`scripts/publish-pages.sh`). Pages serves this repo at
+ * `https://pgil26.github.io/fi-ops-scorecard/`, so the Pages build needs that
+ * base path and fully prerendered static HTML (Pages has no server). Normal
+ * dev / Vercel builds leave `PAGES_BASE` unset and keep base `/`.
+ */
+const PAGES_BASE = process.env.PAGES_BASE; // e.g. "/fi-ops-scorecard/"
+
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
 export default defineConfig(({ command, isPreview }) => ({
+  base: PAGES_BASE || "/",
   server: {
     host: "0.0.0.0",
     port: 8080,
@@ -166,7 +175,9 @@ export default defineConfig(({ command, isPreview }) => ({
     // PWA head + ?install=1 tutorial page; runs before Start/Nitro.
     grokPwaPlugin(),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart(
+      PAGES_BASE ? { prerender: { enabled: true, crawlLinks: true, failOnError: true } } : {},
+    ),
     ...(command === "build" || isPreview
       ? [
           nitro({
@@ -175,6 +186,17 @@ export default defineConfig(({ command, isPreview }) => ({
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
             serverDir: "./server",
+            // Pages build goes to dist/ (static files in dist/static) so it
+            // never clobbers the committed Vercel output in .vercel/output.
+            ...(PAGES_BASE
+              ? {
+                  output: {
+                    dir: "dist",
+                    publicDir: "dist/static",
+                    serverDir: "dist/functions/__server.func",
+                  },
+                }
+              : {}),
           }),
         ]
       : []),
