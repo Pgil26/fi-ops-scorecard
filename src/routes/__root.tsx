@@ -14,7 +14,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Floral Image executive ops board. October progress and the previous route day across Salesforce, RouteMap, and Geotab.",
+          "Floral Image executive ops board. October totals and the previous route day across Salesforce, RouteMap, and Geotab.",
       },
       { name: "theme-color", content: "#1a3c34" },
     ],
