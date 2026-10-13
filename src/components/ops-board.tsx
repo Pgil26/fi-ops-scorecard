@@ -222,7 +222,7 @@ function locationNotes(row: LocationRow, companyHire: number, vans: VanRow[]) {
     notes.push({
       tone: "neutral",
       title: "No named van",
-      body: "Geotab’s Thursday export does not tag a van to this location. Unassigned vans are listed on the company view.",
+      body: "Geotab’s Monday Oct 12 export does not tag a van to this location. Unassigned vans are listed on the company view.",
     });
   }
   return notes.slice(0, 4);
@@ -238,13 +238,13 @@ function companyNotes(rows: LocationRow[]) {
   return [
     {
       tone: "good" as Tone,
-      title: "Wins are still Fort Lauderdale",
-      body: `${num.format(fl?.wonWeek ?? 0)} of ${num.format(wonWeek)} closed-won units this week, by product start date. Atlanta and Chicago are next. Most locations added none.`,
+      title: "Monday win was New York",
+      body: `${num.format(wonWeek)} closed-won unit this week (New York), by product start date. Fort Lauderdale leads October with ${num.format(fl?.wonMonth ?? 0)}.`,
     },
     {
       tone: "watch" as Tone,
       title: "The open book is two cities",
-      body: `Orange County holds ${num.format((oc?.trial ?? 0) + (oc?.collectTrial ?? 0))} open trials and San Francisco ${num.format((sf?.trial ?? 0) + (sf?.collectTrial ?? 0))}. Together that is more than half of ${num.format(trials)}. New trials this week are Atlanta and New York, not those two.`,
+      body: `Orange County holds ${num.format((oc?.trial ?? 0) + (oc?.collectTrial ?? 0))} open trials and San Francisco ${num.format((sf?.trial ?? 0) + (sf?.collectTrial ?? 0))}. Together that is more than half of ${num.format(trials)}. New trials this week are New York (2) and Chicago (1), not those two.`,
     },
     {
       tone: "watch" as Tone,
@@ -253,8 +253,8 @@ function companyNotes(rows: LocationRow[]) {
     },
     {
       tone: "bad" as Tone,
-      title: "Two vans did not work a full day",
-      body: `Thursday fleet: 9 of 10 vans, 172 trips, 630.8 miles. Soraya in Fort Lauderdale ran 49 minutes and 1.7 miles. Gabby logged no trips. Yolanda stopped at 12:42 PM local. Book is ${num.format(hire)} units on hire.`,
+      title: "Three vans short or idle Monday",
+      body: `Monday fleet: ${VANS.filter((v) => v.trips > 0).length} of ${VANS.length} vans, ${num.format(VANS.reduce((t, v) => t + v.trips, 0))} trips, ${num.format(Math.round(VANS.reduce((t, v) => t + v.miles, 0)))} miles. Soraya in Fort Lauderdale ran 49 minutes and 2 miles. LA/OC ran 1h 28m. Phoenix van logged no trips. Book is ${num.format(hire)} units on hire.`,
     },
   ];
 }
@@ -427,7 +427,7 @@ export function OpsBoard() {
           tone="neutral"
         />
         <Tile
-          label="Salesforce Friday"
+          label="Salesforce Monday"
           value={num.format(totals.sfDayUnits)}
           detail={`${num.format(totals.sfDayRows)} refresh logs · previous calendar day`}
           tone="neutral"
@@ -440,7 +440,7 @@ export function OpsBoard() {
         />
         <Tile
           label={selected ? "Vans tagged here" : "Vans out"}
-          value={selected ? `${vansOut}/${vans.length || 0}` : `${vansOut}/10`}
+          value={selected ? `${vansOut}/${vans.length || 0}` : `${vansOut}/${VANS.length}`}
           detail={`${num.format(vanTrips)} trips · ${vanMiles.toFixed(1)} miles`}
           tone={vans.some((van) => van.flag !== "ok") ? "watch" : "neutral"}
         />
@@ -458,7 +458,7 @@ export function OpsBoard() {
       </h2>
       <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-5">
         <div className="min-w-0 lg:col-span-2">
-          <Panel title="Units on hire" source="Salesforce · live Saturday morning">
+          <Panel title="Units on hire" source="Salesforce · live Tuesday morning">
             {selected ? (
               <div className="space-y-3 text-sm">
                 <p className="font-display text-4xl tabular-nums text-ink">{num.format(onHire(selected))}</p>
@@ -569,7 +569,7 @@ export function OpsBoard() {
             </table>
           </div>
         </Panel>
-        <Panel title={`Salesforce refreshes · ${PULLED.sfRefreshDay}`} source="Product Refresh · Friday">
+        <Panel title={`Salesforce refreshes · ${PULLED.sfRefreshDay}`} source="Product Refresh · Monday">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
@@ -593,7 +593,7 @@ export function OpsBoard() {
                 {rows.every((row) => row.sfDayUnits === 0) ? (
                   <tr>
                     <td colSpan={3} className="py-3 text-muted">
-                      No Salesforce refresh log on Friday for this location.
+                      No Salesforce refresh log on Monday for this location.
                     </td>
                   </tr>
                 ) : null}
@@ -648,7 +648,7 @@ export function OpsBoard() {
                 {!vans.length ? (
                   <tr>
                     <td colSpan={8} className="py-3 text-muted">
-                      No van in the Thursday export is tagged to this location.
+                      No van in the Monday export is tagged to this location.
                     </td>
                   </tr>
                 ) : null}
@@ -777,7 +777,7 @@ export function OpsBoard() {
                   </li>
                 ))
               ) : (
-                <li>No van tagged to {selected.name} on Thursday.</li>
+                <li>No van tagged to {selected.name} on Monday.</li>
               )}
             </ul>
           </article>
@@ -802,7 +802,7 @@ export function OpsBoard() {
         </p>
         <p className="mt-2">
           RouteMap Daily Changeover: {PULLED.routeStatus}. RouteMap pairs are customers / units.
-          Geotab advanced detailed trips, {PULLED.geotabPulled}, Thursday only. Salesforce Product Refresh for Friday is a
+          Geotab advanced detailed trips, {PULLED.geotabPulled}, Monday Oct 12 only. Salesforce Product Refresh for Monday is a
           separate log from RouteMap — {num.format(sum(LOCATIONS, (row) => row.sfDayUnits))} units on {num.format(sum(LOCATIONS, (row) => row.sfDayRows))} logs.
           October Salesforce refresh logs: {num.format(sum(LOCATIONS, (row) => row.sfMtdUnits))} units.
         </p>
