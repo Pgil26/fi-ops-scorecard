@@ -201,14 +201,14 @@ function locationNotes(row: LocationRow, companyHire: number, vans: VanRow[]) {
   if (row.routeDayUnits == null && row.routeMtdUnits == null) {
     notes.push({
       tone: "watch",
-      title: "RouteMap pending",
-      body: PULLED.routeStatus,
+      title: "No RouteMap row",
+      body: "This location is not in the Mon Oct 12 RouteMap Daily Changeover file.",
     });
-  } else if (row.routeDayUnits == null) {
+  } else if (!row.routeDayUnits) {
     notes.push({
       tone: "watch",
-      title: "RouteMap pending",
-      body: PULLED.routeStatus,
+      title: "No RouteMap activity Monday",
+      body: `${PULLED.routeMtdLabel}: ${num.format(row.routeMtdCustomers ?? 0)} customers / ${num.format(row.routeMtdUnits ?? 0)} units, ${num.format(row.routeMtdPending ?? 0)} pending.`,
     });
   }
   if (row.lostWeekDeals > 0 || row.cancelMoved > 0) {
@@ -248,8 +248,8 @@ function companyNotes(rows: LocationRow[]) {
     },
     {
       tone: "watch" as Tone,
-      title: "RouteMap pending",
-      body: PULLED.routeStatus,
+      title: "RouteMap pending sits in Dallas",
+      body: `RouteMap pending is ${num.format(sum(rows, (row) => row.routeMtdPending ?? 0))} company-wide: 15 Dallas, 6 Denver, 6 Orange County, 3 Seattle, 2 Fort Lauderdale, 1 Portland, 1 San Francisco (${PULLED.routeMtdLabel}).`,
     },
     {
       tone: "bad" as Tone,
@@ -295,7 +295,7 @@ export function OpsBoard() {
       routeMtdCustomers: sum(rows, (row) => row.routeMtdCustomers ?? 0),
       routeMtdUnits: sum(rows, (row) => row.routeMtdUnits ?? 0),
       routePending: sum(rows, (row) => row.routeMtdPending ?? 0),
-      routeDayLocations: rows.filter((row) => row.routeDayUnits != null).length,
+      routeDayLocations: rows.filter((row) => (row.routeDayUnits ?? 0) > 0).length,
     }),
     [rows],
   );
@@ -405,7 +405,7 @@ export function OpsBoard() {
         <span className="font-semibold">{scope}.</span>{" "}
         {num.format(totals.hire)} units on hire
         {selected ? ` (${share(totals.hire, companyHire)} of the company)` : " across 21 locations"}.
-        RouteMap: {PULLED.routeStatus}. Monday Salesforce
+        RouteMap Monday: {num.format(totals.routeDayCustomers)} customers / {num.format(totals.routeDayUnits)} units; {PULLED.routeMtdLabel}: {num.format(totals.routeMtdCustomers)} customers / {num.format(totals.routeMtdUnits)} units, {num.format(totals.routePending)} pending. Monday Salesforce
         refreshes: {num.format(totals.sfDayRows)} logs, {num.format(totals.sfDayUnits)} units. Open trials{" "}
         {num.format(totals.trial + totals.collectTrial)}.
       </p>
@@ -422,8 +422,8 @@ export function OpsBoard() {
         />
         <Tile
           label="RouteMap Mon Oct 12"
-          value="Pending"
-          detail={PULLED.routeStatus}
+          value={num.format(totals.routeDayCustomers)}
+          detail={`customers / ${num.format(totals.routeDayUnits)} units · ${num.format(totals.routeDayLocations)} locations active`}
           tone="neutral"
         />
         <Tile
@@ -433,9 +433,9 @@ export function OpsBoard() {
           tone="neutral"
         />
         <Tile
-          label="October RouteMap"
-          value="Pending"
-          detail="customers / units not available until the Oct 12 export"
+          label="Oct MTD RouteMap"
+          value={num.format(totals.routeMtdCustomers)}
+          detail={`customers / ${num.format(totals.routeMtdUnits)} units · ${num.format(totals.routePending)} pending · ${PULLED.routeMtdLabel}`}
           tone="neutral"
         />
         <Tile
@@ -477,7 +477,7 @@ export function OpsBoard() {
           </Panel>
         </div>
         <div className="min-w-0 lg:col-span-3">
-          <Panel title="October field work and sales" source="RouteMap pending · Salesforce through Mon">
+          <Panel title="October field work and sales" source={`RouteMap ${PULLED.routeMtdLabel} · Salesforce through Mon`}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-xl text-left text-sm">
                 <thead>
@@ -532,7 +532,7 @@ export function OpsBoard() {
 
       <h2 className="mt-8 text-xs font-semibold tracking-widest text-muted uppercase">Previous days</h2>
       <p className="mt-2 text-sm text-muted">
-        RouteMap: {PULLED.routeStatus}. Geotab and Salesforce cover Monday Oct 12.
+        RouteMap, Geotab and Salesforce cover Monday Oct 12.
       </p>
       <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-2">
         <Panel title={`RouteMap · ${PULLED.routeDay}`} source={`Pulled ${PULLED.routePulled}`}>
@@ -543,25 +543,27 @@ export function OpsBoard() {
                   <th className="py-2 pr-2 font-semibold">Location</th>
                   <th className="py-2 pr-2 text-right font-semibold">Customers</th>
                   <th className="py-2 pr-2 text-right font-semibold">Units</th>
+                  <th className="py-2 pr-2 text-right font-semibold">Pending</th>
                   <th className="py-2 font-semibold">Window</th>
                 </tr>
               </thead>
               <tbody>
                 {rows
-                  .filter((row) => row.routeDayUnits != null)
+                  .filter((row) => (row.routeDayUnits ?? 0) > 0)
                   .sort((a, b) => (b.routeDayUnits ?? 0) - (a.routeDayUnits ?? 0))
                   .map((row) => (
                     <tr key={row.id} className="border-b border-line/70">
                       <td className="py-2 pr-2">{row.routeName ?? row.name}</td>
                       <td className="py-2 pr-2 text-right tabular-nums">{num.format(row.routeDayCustomers ?? 0)}</td>
                       <td className="py-2 pr-2 text-right tabular-nums">{num.format(row.routeDayUnits ?? 0)}</td>
+                      <td className="py-2 pr-2 text-right tabular-nums">{row.routeMtdPending == null ? "—" : num.format(row.routeMtdPending)}</td>
                       <td className="py-2 text-muted">{row.routeDayWindow}</td>
                     </tr>
                   ))}
-                {rows.every((row) => row.routeDayUnits == null) ? (
+                {rows.every((row) => !row.routeDayUnits) ? (
                   <tr>
-                    <td colSpan={4} className="py-3 text-muted">
-                      {PULLED.routeStatus}
+                    <td colSpan={5} className="py-3 text-muted">
+                      No RouteMap activity Mon Oct 12 for this location.
                     </td>
                   </tr>
                 ) : null}
@@ -701,7 +703,7 @@ export function OpsBoard() {
               <th className="px-3 py-3 text-right font-semibold">Won mo</th>
               <th className="px-3 py-3 text-right font-semibold">Lost mo</th>
               <th className="px-3 py-3 text-right font-semibold">Mon route units</th>
-              <th className="px-3 py-3 text-right font-semibold">Oct route</th>
+              <th className="px-3 py-3 text-right font-semibold">Oct MTD units</th>
             </tr>
           </thead>
           <tbody>
@@ -757,10 +759,10 @@ export function OpsBoard() {
             </p>
             <ul className="mt-2 space-y-1 text-sm">
               <li>
-                Mon Oct 12 {selected.routeDayCustomers == null ? "pending" : `${num.format(selected.routeDayCustomers)} customers / ${num.format(selected.routeDayUnits ?? 0)} units`}
+                Mon Oct 12 {selected.routeDayCustomers == null ? "no row" : `${num.format(selected.routeDayCustomers)} customers / ${num.format(selected.routeDayUnits ?? 0)} units`}
               </li>
               <li>
-                October {selected.routeMtdCustomers == null ? "pending" : `${num.format(selected.routeMtdCustomers)} customers / ${num.format(selected.routeMtdUnits ?? 0)} units`}
+                Oct MTD {selected.routeMtdCustomers == null ? "no row" : `${num.format(selected.routeMtdCustomers)} customers / ${num.format(selected.routeMtdUnits ?? 0)} units`}
               </li>
               <li>Pending {selected.routeMtdPending == null ? "—" : num.format(selected.routeMtdPending)}</li>
             </ul>
@@ -801,7 +803,7 @@ export function OpsBoard() {
           Weekly and monthly rates are the won-book currency fields, including inactive units, summed in org currency.
         </p>
         <p className="mt-2">
-          RouteMap Daily Changeover: {PULLED.routeStatus}. RouteMap pairs are customers / units.
+          RouteMap Daily Changeover, pulled {PULLED.routePulled}. RouteMap pairs are customers / units. {PULLED.routeMtdLabel}.
           Geotab advanced detailed trips, {PULLED.geotabPulled}, Monday Oct 12 only. Salesforce Product Refresh for Monday is a
           separate log from RouteMap — {num.format(sum(LOCATIONS, (row) => row.sfDayUnits))} units on {num.format(sum(LOCATIONS, (row) => row.sfDayRows))} logs.
           October Salesforce refresh logs: {num.format(sum(LOCATIONS, (row) => row.sfMtdUnits))} units.
