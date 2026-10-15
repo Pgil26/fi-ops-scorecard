@@ -202,12 +202,12 @@ function locationNotes(row: LocationRow, companyHire: number, vans: VanRow[]) {
     notes.push({
       tone: "watch",
       title: "No RouteMap row",
-      body: "This location is not in the Mon Oct 12 RouteMap Daily Changeover file.",
+      body: `This location is not in the ${PULLED.routeDay} RouteMap Daily Changeover file.`,
     });
   } else if (!row.routeDayUnits) {
     notes.push({
       tone: "watch",
-      title: "No RouteMap activity Monday",
+      title: `No RouteMap activity ${PULLED.routeDay}`,
       body: `${PULLED.routeMtdLabel}: ${num.format(row.routeMtdCustomers ?? 0)} customers / ${num.format(row.routeMtdUnits ?? 0)} units, ${num.format(row.routeMtdPending ?? 0)} pending.`,
     });
   }
@@ -222,7 +222,7 @@ function locationNotes(row: LocationRow, companyHire: number, vans: VanRow[]) {
     notes.push({
       tone: "neutral",
       title: "No named van",
-      body: "Geotab’s Monday Oct 12 export does not tag a van to this location. Unassigned vans are listed on the company view.",
+      body: `Geotab’s ${PULLED.geotabDay} export does not tag a van to this location. Unassigned vans are listed on the company view.`,
     });
   }
   return notes.slice(0, 4);
@@ -232,29 +232,39 @@ function companyNotes(rows: LocationRow[]) {
   const hire = sum(rows, onHire);
   const trials = sum(rows, (row) => row.trial + row.collectTrial);
   const wonWeek = sum(rows, (row) => row.wonWeek);
-  const fl = rows.find((row) => row.id === "fort-lauderdale");
-  const oc = rows.find((row) => row.id === "orange-county");
-  const sf = rows.find((row) => row.id === "san-francisco");
+  const wonMonth = sum(rows, (row) => row.wonMonth);
+  const topWon = [...rows].sort((a, b) => b.wonMonth - a.wonMonth)[0];
+  const topTrial = [...rows].sort((a, b) => b.trial + b.collectTrial - (a.trial + a.collectTrial)).slice(0, 2);
+  const pend = rows
+    .filter((row) => (row.routeMtdPending ?? 0) > 0)
+    .sort((a, b) => (b.routeMtdPending ?? 0) - (a.routeMtdPending ?? 0))
+    .map((row) => `${num.format(row.routeMtdPending ?? 0)} ${row.routeName ?? row.name}`)
+    .join(", ");
+  const topPend = [...rows].sort((a, b) => (b.routeMtdPending ?? 0) - (a.routeMtdPending ?? 0))[0];
+  const flagged = VANS.filter((v) => v.flag !== "ok");
+  const flagText = flagged
+    .map((v) => (v.flag === "none" ? `${v.name} logged no trips` : `${v.name} ran ${v.onRoad}, ${num.format(v.miles)} mi`))
+    .join(". ");
   return [
     {
       tone: "good" as Tone,
-      title: "Monday win was New York",
-      body: `${num.format(wonWeek)} closed-won unit this week (New York), by product start date. Fort Lauderdale leads October with ${num.format(fl?.wonMonth ?? 0)}.`,
+      title: `Closed won · ${PULLED.weekLabel}`,
+      body: `${num.format(wonWeek)} closed-won units this week, ${num.format(wonMonth)} in ${PULLED.monthLabel}, by product start date. ${topWon?.name ?? ""} leads October with ${num.format(topWon?.wonMonth ?? 0)}.`,
     },
     {
       tone: "watch" as Tone,
-      title: "The open book is two cities",
-      body: `Orange County holds ${num.format((oc?.trial ?? 0) + (oc?.collectTrial ?? 0))} open trials and San Francisco ${num.format((sf?.trial ?? 0) + (sf?.collectTrial ?? 0))}. Together that is more than half of ${num.format(trials)}. New trials this week are New York (2) and Chicago (1), not those two.`,
+      title: "Where the open trials sit",
+      body: `${topTrial.map((row) => `${row.name} ${num.format(row.trial + row.collectTrial)}`).join(" and ")} of ${num.format(trials)} open trials (incl. collect-trial).`,
     },
     {
       tone: "watch" as Tone,
-      title: "RouteMap pending sits in Dallas",
-      body: `RouteMap pending is ${num.format(sum(rows, (row) => row.routeMtdPending ?? 0))} company-wide: 15 Dallas, 6 Denver, 6 Orange County, 3 Seattle, 2 Fort Lauderdale, 1 Portland, 1 San Francisco (${PULLED.routeMtdLabel}).`,
+      title: `RouteMap pending · most in ${topPend?.routeName ?? topPend?.name ?? ""}`,
+      body: `RouteMap pending is ${num.format(sum(rows, (row) => row.routeMtdPending ?? 0))} company-wide: ${pend} (${PULLED.routeMtdLabel}).`,
     },
     {
       tone: "bad" as Tone,
-      title: "Three vans short or idle Monday",
-      body: `Monday fleet: ${VANS.filter((v) => v.trips > 0).length} of ${VANS.length} vans, ${num.format(VANS.reduce((t, v) => t + v.trips, 0))} trips, ${num.format(Math.round(VANS.reduce((t, v) => t + v.miles, 0)))} miles. Soraya in Fort Lauderdale ran 49 minutes and 2 miles. LA/OC ran 1h 28m. Phoenix van logged no trips. Book is ${num.format(hire)} units on hire.`,
+      title: `${flagged.length} van${flagged.length === 1 ? "" : "s"} short or idle · ${PULLED.geotabDay}`,
+      body: `${PULLED.geotabDay} fleet: ${VANS.filter((v) => v.trips > 0).length} of ${VANS.length} vans, ${num.format(VANS.reduce((t, v) => t + v.trips, 0))} trips, ${num.format(Math.round(VANS.reduce((t, v) => t + v.miles, 0)))} miles. ${flagText}. Book is ${num.format(hire)} units on hire.`,
     },
   ];
 }
@@ -405,7 +415,7 @@ export function OpsBoard() {
         <span className="font-semibold">{scope}.</span>{" "}
         {num.format(totals.hire)} units on hire
         {selected ? ` (${share(totals.hire, companyHire)} of the company)` : " across 21 locations"}.
-        RouteMap Monday: {num.format(totals.routeDayCustomers)} customers / {num.format(totals.routeDayUnits)} units; {PULLED.routeMtdLabel}: {num.format(totals.routeMtdCustomers)} customers / {num.format(totals.routeMtdUnits)} units, {num.format(totals.routePending)} pending. Monday Salesforce
+        RouteMap {PULLED.routeDay}: {num.format(totals.routeDayCustomers)} customers / {num.format(totals.routeDayUnits)} units; {PULLED.routeMtdLabel}: {num.format(totals.routeMtdCustomers)} customers / {num.format(totals.routeMtdUnits)} units, {num.format(totals.routePending)} pending. {PULLED.sfRefreshDay} Salesforce
         refreshes: {num.format(totals.sfDayRows)} logs, {num.format(totals.sfDayUnits)} units. Open trials{" "}
         {num.format(totals.trial + totals.collectTrial)}.
       </p>
@@ -421,13 +431,13 @@ export function OpsBoard() {
           tone={totals.lostWeek + totals.cancelDeals > 0 ? "bad" : "neutral"}
         />
         <Tile
-          label="RouteMap Mon Oct 12"
+          label={`RouteMap ${PULLED.routeDay}`}
           value={num.format(totals.routeDayCustomers)}
           detail={`customers / ${num.format(totals.routeDayUnits)} units · ${num.format(totals.routeDayLocations)} locations active`}
           tone="neutral"
         />
         <Tile
-          label="Salesforce Monday"
+          label={`Salesforce ${PULLED.sfRefreshDay}`}
           value={num.format(totals.sfDayUnits)}
           detail={`${num.format(totals.sfDayRows)} refresh logs · previous calendar day`}
           tone="neutral"
@@ -477,7 +487,7 @@ export function OpsBoard() {
           </Panel>
         </div>
         <div className="min-w-0 lg:col-span-3">
-          <Panel title="October field work and sales" source={`RouteMap ${PULLED.routeMtdLabel} · Salesforce through Mon`}>
+          <Panel title="October field work and sales" source={`RouteMap ${PULLED.routeMtdLabel} · Salesforce through ${PULLED.sfRefreshDay}`}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-xl text-left text-sm">
                 <thead>
@@ -532,7 +542,7 @@ export function OpsBoard() {
 
       <h2 className="mt-8 text-xs font-semibold tracking-widest text-muted uppercase">Previous days</h2>
       <p className="mt-2 text-sm text-muted">
-        RouteMap, Geotab and Salesforce cover Monday Oct 12.
+        RouteMap, Geotab and Salesforce cover {PULLED.routeDay}.
       </p>
       <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-2">
         <Panel title={`RouteMap · ${PULLED.routeDay}`} source={`Pulled ${PULLED.routePulled}`}>
@@ -563,7 +573,7 @@ export function OpsBoard() {
                 {rows.every((row) => !row.routeDayUnits) ? (
                   <tr>
                     <td colSpan={5} className="py-3 text-muted">
-                      No RouteMap activity Mon Oct 12 for this location.
+                      No RouteMap activity {PULLED.routeDay} for this location.
                     </td>
                   </tr>
                 ) : null}
@@ -571,7 +581,7 @@ export function OpsBoard() {
             </table>
           </div>
         </Panel>
-        <Panel title={`Salesforce refreshes · ${PULLED.sfRefreshDay}`} source="Product Refresh · Monday">
+        <Panel title={`Salesforce refreshes · ${PULLED.sfRefreshDay}`} source={`Product Refresh · ${PULLED.sfRefreshDay}`}>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
@@ -595,7 +605,7 @@ export function OpsBoard() {
                 {rows.every((row) => row.sfDayUnits === 0) ? (
                   <tr>
                     <td colSpan={3} className="py-3 text-muted">
-                      No Salesforce refresh log on Monday for this location.
+                      No Salesforce refresh log on {PULLED.sfRefreshDay} for this location.
                     </td>
                   </tr>
                 ) : null}
@@ -650,7 +660,7 @@ export function OpsBoard() {
                 {!vans.length ? (
                   <tr>
                     <td colSpan={8} className="py-3 text-muted">
-                      No van in the Monday export is tagged to this location.
+                      No van in the {PULLED.geotabDay} export is tagged to this location.
                     </td>
                   </tr>
                 ) : null}
@@ -702,7 +712,7 @@ export function OpsBoard() {
               <th className="px-3 py-3 text-right font-semibold">Pending</th>
               <th className="px-3 py-3 text-right font-semibold">Won mo</th>
               <th className="px-3 py-3 text-right font-semibold">Lost mo</th>
-              <th className="px-3 py-3 text-right font-semibold">Mon route units</th>
+              <th className="px-3 py-3 text-right font-semibold">Day route units</th>
               <th className="px-3 py-3 text-right font-semibold">Oct MTD units</th>
             </tr>
           </thead>
@@ -759,7 +769,7 @@ export function OpsBoard() {
             </p>
             <ul className="mt-2 space-y-1 text-sm">
               <li>
-                Mon Oct 12 {selected.routeDayCustomers == null ? "no row" : `${num.format(selected.routeDayCustomers)} customers / ${num.format(selected.routeDayUnits ?? 0)} units`}
+                {PULLED.routeDay} {selected.routeDayCustomers == null ? "no row" : `${num.format(selected.routeDayCustomers)} customers / ${num.format(selected.routeDayUnits ?? 0)} units`}
               </li>
               <li>
                 Oct MTD {selected.routeMtdCustomers == null ? "no row" : `${num.format(selected.routeMtdCustomers)} customers / ${num.format(selected.routeMtdUnits ?? 0)} units`}
@@ -779,7 +789,7 @@ export function OpsBoard() {
                   </li>
                 ))
               ) : (
-                <li>No van tagged to {selected.name} on Monday.</li>
+                <li>No van tagged to {selected.name} on {PULLED.geotabDay}.</li>
               )}
             </ul>
           </article>
@@ -804,7 +814,7 @@ export function OpsBoard() {
         </p>
         <p className="mt-2">
           RouteMap Daily Changeover, pulled {PULLED.routePulled}. RouteMap pairs are customers / units. {PULLED.routeMtdLabel}.
-          Geotab advanced detailed trips, {PULLED.geotabPulled}, Monday Oct 12 only. Salesforce Product Refresh for Monday is a
+          Geotab advanced detailed trips, {PULLED.geotabPulled}, {PULLED.geotabDay} only. Salesforce Product Refresh for {PULLED.sfRefreshDay} is a
           separate log from RouteMap — {num.format(sum(LOCATIONS, (row) => row.sfDayUnits))} units on {num.format(sum(LOCATIONS, (row) => row.sfDayRows))} logs.
           October Salesforce refresh logs: {num.format(sum(LOCATIONS, (row) => row.sfMtdUnits))} units.
         </p>
