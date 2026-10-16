@@ -28,6 +28,7 @@ import {
   type LocationRow,
   type VanRow,
 } from "@/data/ops";
+import { REGIONS, UNASSIGNED, regionFor } from "@/data/regions";
 
 type Tone = "neutral" | "good" | "watch" | "bad";
 
@@ -267,6 +268,131 @@ function companyNotes(rows: LocationRow[]) {
       body: `${PULLED.geotabDay} fleet: ${VANS.filter((v) => v.trips > 0).length} of ${VANS.length} vans, ${num.format(VANS.reduce((t, v) => t + v.trips, 0))} trips, ${num.format(Math.round(VANS.reduce((t, v) => t + v.miles, 0)))} miles. ${flagText}. Book is ${num.format(hire)} units on hire.`,
     },
   ];
+}
+
+const dash = "—";
+function fmt(v: number | null | undefined) {
+  return v == null ? dash : num.format(v);
+}
+/** Sum a nullable field; null only when every row is null (no data). */
+function nsum(rows: LocationRow[], pick: (row: LocationRow) => number | null) {
+  const vals = rows.map(pick).filter((v): v is number => v != null);
+  return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+}
+function pair(c: number | null, u: number | null) {
+  return c == null && u == null ? dash : `${fmt(c)} / ${fmt(u)}`;
+}
+
+function RegionCells({ rows, vans }: { rows: LocationRow[]; vans: VanRow[] }) {
+  const cell = "px-3 py-2.5 text-right tabular-nums whitespace-nowrap";
+  return (
+    <>
+      <td className={cell}>{fmt(sum(rows, onHire))}</td>
+      <td className={cell} title="No closed-won day field in the Salesforce pull">{dash}</td>
+      <td className={cell}>{fmt(sum(rows, (r) => r.wonWeek))}</td>
+      <td className={cell}>{fmt(sum(rows, (r) => r.wonMonth))}</td>
+      <td className={cell}>{fmt(sum(rows, (r) => r.trial + r.collectTrial))}</td>
+      <td className={cell} title="Closed no is not in the Salesforce pull">{dash}</td>
+      <td className={cell}>{fmt(sum(rows, (r) => r.cancelDeals))} · {usd.format(sum(rows, (r) => r.cancelAmt))}</td>
+      <td className={cell}>{fmt(sum(rows, (r) => r.lostMonthDeals))} / {fmt(sum(rows, (r) => r.lostMonthUnits))}</td>
+      <td className={cell}>{fmt(sum(rows, (r) => r.sfMtdRows))} / {fmt(sum(rows, (r) => r.sfMtdUnits))}</td>
+      <td className={cell}>{pair(nsum(rows, (r) => r.routeDayCustomers), nsum(rows, (r) => r.routeDayUnits))}</td>
+      <td className={cell}>{pair(nsum(rows, (r) => r.routeMtdCustomers), nsum(rows, (r) => r.routeMtdUnits))}</td>
+      <td className={cell}>{fmt(nsum(rows, (r) => r.routeMtdPending))}</td>
+      <td className={cell}>{vans.length ? `${vans.filter((v) => v.trips > 0).length}/${vans.length}` : dash}</td>
+      <td className={cell}>{vans.length ? fmt(vans.reduce((t, v) => t + v.trips, 0)) : dash}</td>
+      <td className={cell}>{vans.length ? fmt(Math.round(vans.reduce((t, v) => t + v.miles, 0))) : dash}</td>
+    </>
+  );
+}
+
+function RegionalView({ selectedId, onPick }: { selectedId?: string; onPick: (id: string) => void }) {
+  const groups = [...REGIONS.map((r) => ({ id: r.id as string, name: r.name })), UNASSIGNED].map((g) => {
+    const rows = LOCATIONS.filter((row) => regionFor(row).id === g.id);
+    const ids = new Set(rows.map((r) => r.id));
+    const vans = VANS.filter((v) => (v.locationId ? ids.has(v.locationId) : g.id === UNASSIGNED.id) ||
+      (g.id === UNASSIGNED.id && v.locationId != null && !LOCATIONS.some((l) => l.id === v.locationId)));
+    return { ...g, rows, vans };
+  }).filter((g) => g.id !== UNASSIGNED.id || g.rows.length || g.vans.length);
+  const selRegion = selectedId ? groups.find((g) => g.rows.some((r) => r.id === selectedId))?.id : undefined;
+  const [open, setOpen] = useState<string | null>(null);
+  const expanded = open ?? selRegion ?? null;
+  const head = "px-3 py-3 text-right font-semibold whitespace-nowrap";
+  return (
+    <>
+      <h2 className="mt-8 flex items-center gap-2 text-xs font-semibold tracking-widest text-muted uppercase">
+        <Building2 className="size-3.5" aria-hidden="true" />
+        By region
+      </h2>
+      <div className="mt-3 min-w-0 overflow-x-auto rounded-card border border-line bg-card">
+        <table className="w-full min-w-5xl text-left text-sm">
+          <thead>
+            <tr className="border-b border-line text-[11px] tracking-wide text-muted uppercase">
+              <th className="px-3 py-2" />
+              <th className="px-3 py-2 text-center font-semibold" colSpan={9}>Salesforce</th>
+              <th className="px-3 py-2 text-center font-semibold" colSpan={3}>RouteMap · customers / units</th>
+              <th className="px-3 py-2 text-center font-semibold" colSpan={3}>Geotab · {PULLED.geotabDay}</th>
+            </tr>
+            <tr className="border-b border-line text-xs tracking-wide text-muted uppercase">
+              <th className="px-3 py-3 font-semibold">Region</th>
+              <th className={head}>On hire</th>
+              <th className={head}>Won day</th>
+              <th className={head}>Won wk</th>
+              <th className={head}>Won mo</th>
+              <th className={head}>Trials</th>
+              <th className={head}>Closed no</th>
+              <th className={head}>Cancel/collect</th>
+              <th className={head}>Lost mo deals/units</th>
+              <th className={head}>Refresh logs/units mo</th>
+              <th className={head}>{PULLED.routeDay}</th>
+              <th className={head}>Oct MTD</th>
+              <th className={head}>Pending</th>
+              <th className={head}>Vans out</th>
+              <th className={head}>Trips</th>
+              <th className={head}>Miles</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((g) => {
+              const isOpen = expanded === g.id;
+              return [
+                <tr key={g.id} className={`border-b border-line/70 ${selRegion === g.id ? "bg-paper" : ""}`}>
+                  <td className="px-3 py-2.5 whitespace-nowrap">
+                    <button type="button" className="text-left font-semibold text-ink underline-offset-2 hover:underline"
+                      onClick={() => setOpen(isOpen ? "" : g.id)} aria-expanded={isOpen}>
+                      {isOpen ? "▾" : "▸"} {g.name} <span className="font-normal text-muted">({g.rows.length})</span>
+                    </button>
+                  </td>
+                  <RegionCells rows={g.rows} vans={g.vans} />
+                </tr>,
+                ...(isOpen
+                  ? g.rows.map((row) => (
+                      <tr key={`${g.id}-${row.id}`} className={`border-b border-line/40 text-muted ${row.id === selectedId ? "bg-paper" : ""}`}>
+                        <td className="py-2 pr-3 pl-8 whitespace-nowrap">
+                          <button type="button" className="text-left underline-offset-2 hover:underline" onClick={() => onPick(row.id)}>
+                            {row.name}
+                          </button>
+                        </td>
+                        <RegionCells rows={[row]} vans={VANS.filter((v) => v.locationId === row.id)} />
+                      </tr>
+                    ))
+                  : []),
+              ];
+            })}
+            <tr className="border-t-2 border-line font-semibold">
+              <td className="px-3 py-2.5">Company total</td>
+              <RegionCells rows={LOCATIONS} vans={VANS} />
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-xs text-muted">
+        Regions follow the regional executive workbook. Unassigned = locations the workbook leaves out (Tampa, Sao Paulo) and vans Geotab
+        doesn’t tag to a location. RouteMap pairs are customers / units. Salesforce refresh logs and RouteMap units are separate systems — don’t add them.
+        Won day and closed no aren’t in the Salesforce pull, so they show —. Click a region to see its locations.
+      </p>
+    </>
+  );
 }
 
 export function OpsBoard() {
@@ -673,6 +799,8 @@ export function OpsBoard() {
           </p>
         </Panel>
       </div>
+
+      <RegionalView selectedId={selected?.id} onPick={(id) => setLocation(id)} />
 
       <h2 className="mt-8 flex items-center gap-2 text-xs font-semibold tracking-widest text-muted uppercase">
         <Building2 className="size-3.5" aria-hidden="true" />
