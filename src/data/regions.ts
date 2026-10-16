@@ -57,3 +57,17 @@ export function regionFor(row: Pick<LocationRow, "id" | "name" | "routeName">): 
   const region = id ? REGIONS.find((r) => r.locations.includes(id)) : undefined;
   return region ? { id: region.id, name: region.name } : UNASSIGNED;
 }
+
+/** Van → location assignments approved by Patrick (Oct 16, 2026), keyed by normalized Geotab van name.
+ * Applied on top of VANS[].locationId so daily refreshes keep them. Parked Van stays unassigned. */
+export const VAN_LOCATIONS: Record<string, string> = {
+  val: "san-diego",
+  jd: "fort-worth",
+  gabby: "atlanta",
+  yolanda: "orange-county",
+  irving: "san-francisco",
+};
+
+export function vanLocationId(van: { name: string; locationId: string | null }): string | null {
+  return van.locationId ?? VAN_LOCATIONS[normalizeName(van.name)] ?? null;
+}

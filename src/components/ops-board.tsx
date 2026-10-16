@@ -28,7 +28,7 @@ import {
   type LocationRow,
   type VanRow,
 } from "@/data/ops";
-import { REGIONS, UNASSIGNED, regionFor } from "@/data/regions";
+import { REGIONS, UNASSIGNED, regionFor, vanLocationId } from "@/data/regions";
 
 type Tone = "neutral" | "good" | "watch" | "bad";
 
@@ -310,8 +310,11 @@ function RegionalView({ selectedId, onPick }: { selectedId?: string; onPick: (id
   const groups = [...REGIONS.map((r) => ({ id: r.id as string, name: r.name })), UNASSIGNED].map((g) => {
     const rows = LOCATIONS.filter((row) => regionFor(row).id === g.id);
     const ids = new Set(rows.map((r) => r.id));
-    const vans = VANS.filter((v) => (v.locationId ? ids.has(v.locationId) : g.id === UNASSIGNED.id) ||
-      (g.id === UNASSIGNED.id && v.locationId != null && !LOCATIONS.some((l) => l.id === v.locationId)));
+    const vans = VANS.filter((v) => {
+      const loc = vanLocationId(v);
+      const known = loc != null && LOCATIONS.some((l) => l.id === loc);
+      return known ? ids.has(loc) : g.id === UNASSIGNED.id;
+    });
     return { ...g, rows, vans };
   }).filter((g) => g.id !== UNASSIGNED.id || g.rows.length || g.vans.length);
   const selRegion = selectedId ? groups.find((g) => g.rows.some((r) => r.id === selectedId))?.id : undefined;
@@ -373,7 +376,7 @@ function RegionalView({ selectedId, onPick }: { selectedId?: string; onPick: (id
                             {row.name}
                           </button>
                         </td>
-                        <RegionCells rows={[row]} vans={VANS.filter((v) => v.locationId === row.id)} />
+                        <RegionCells rows={[row]} vans={VANS.filter((v) => vanLocationId(v) === row.id)} />
                       </tr>
                     ))
                   : []),
@@ -387,8 +390,8 @@ function RegionalView({ selectedId, onPick }: { selectedId?: string; onPick: (id
         </table>
       </div>
       <p className="mt-2 text-xs text-muted">
-        Regions follow the regional executive workbook. Unassigned = locations the workbook leaves out (Tampa, Sao Paulo) and vans Geotab
-        doesn’t tag to a location. RouteMap pairs are customers / units. Salesforce refresh logs and RouteMap units are separate systems — don’t add them.
+        Regions follow the regional executive workbook. Unassigned = locations the workbook leaves out (Tampa, Sao Paulo) and vans with no
+        location (Parked Van). RouteMap pairs are customers / units. Salesforce refresh logs and RouteMap units are separate systems — don’t add them.
         Won day and closed no aren’t in the Salesforce pull, so they show —. Click a region to see its locations.
       </p>
     </>
@@ -404,7 +407,7 @@ export function OpsBoard() {
 
   const companyHire = sum(LOCATIONS, onHire);
   const rows = selected ? [selected] : LOCATIONS;
-  const vans = selected ? VANS.filter((van) => van.locationId === selected.id) : VANS;
+  const vans = selected ? VANS.filter((van) => vanLocationId(van) === selected.id) : VANS;
 
   const totals = useMemo(
     () => ({
@@ -763,7 +766,7 @@ export function OpsBoard() {
                     <td className="py-2 pr-2 font-medium">
                       {van.name}
                       <span className="mt-0.5 block text-xs font-normal text-muted">
-                        {van.locationId ? findLocation(van.locationId)?.name : "Location not on the export"}
+                        {vanLocationId(van) ? findLocation(vanLocationId(van)!)?.name : "Location not on the export"}
                       </span>
                     </td>
                     <td className="py-2 pr-2">{van.zone}</td>
@@ -795,7 +798,7 @@ export function OpsBoard() {
           </div>
           <p className="mt-3 text-xs text-muted">
             On the road is first trip start to last trip stop, in the van’s local time, not driving duration.
-            Only vans whose name includes the city are tied to a location. Val, JD, Irving, Yolanda, and Gabby stay unassigned.
+            Vans are tied to locations by city name or by approved assignment (Val → San Diego, JD → Fort Worth, Gabby → Atlanta, Yolanda → LA/OC, Irving → San Francisco). Parked Van stays unassigned.
           </p>
         </Panel>
       </div>
