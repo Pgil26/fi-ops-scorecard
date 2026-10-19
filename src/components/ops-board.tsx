@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import {
   LOCATIONS,
+  PHOTO_AUDIT,
   PULLED,
   VANS,
   findLocation,
@@ -673,6 +674,30 @@ export function OpsBoard() {
       <p className="mt-2 text-sm text-muted">
         RouteMap, Geotab and Salesforce cover {PULLED.routeDay}.
       </p>
+      <div className="mt-3">
+        <Panel title={`Photo audit · ${PHOTO_AUDIT.day}`} source="RouteMap non-compatible photos by location">
+          {PHOTO_AUDIT.status === "pending" ? (
+            <p className="text-sm text-muted">Pending: no photo audit file for {PHOTO_AUDIT.day} yet.</p>
+          ) : PHOTO_AUDIT.rows.length === 0 ? (
+            <p className="text-sm text-ink">No non-compatible photos.</p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {[...PHOTO_AUDIT.rows]
+                .sort((a, b) => b.count - a.count || a.location.localeCompare(b.location))
+                .map((r) => (
+                  <li key={r.location} className="flex justify-between border-b border-line/70 py-1">
+                    <span>{r.location}</span>
+                    <span className="tabular-nums">{num.format(r.count)} non-compatible photo{r.count === 1 ? "" : "s"}</span>
+                  </li>
+                ))}
+              <li className="flex justify-between py-1 font-semibold">
+                <span>Total</span>
+                <span className="tabular-nums">{num.format(PHOTO_AUDIT.rows.reduce((t, r) => t + r.count, 0))} non-compatible photos</span>
+              </li>
+            </ul>
+          )}
+        </Panel>
+      </div>
       <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-2">
         <Panel title={`RouteMap · ${PULLED.routeDay}`} source={`Pulled ${PULLED.routePulled}`}>
           <div className="overflow-x-auto">
