@@ -265,8 +265,8 @@ function companyNotes(rows: LocationRow[]) {
     },
     {
       tone: "bad" as Tone,
-      title: `${flagged.length} van${flagged.length === 1 ? "" : "s"} short or idle · ${PULLED.geotabDay}`,
-      body: `${PULLED.geotabDay} fleet: ${VANS.filter((v) => v.trips > 0).length} of ${VANS.length} vans, ${num.format(VANS.reduce((t, v) => t + v.trips, 0))} trips, ${num.format(Math.round(VANS.reduce((t, v) => t + v.miles, 0)))} miles. ${flagText}. Book is ${num.format(hire)} units on hire.`,
+      title: VANS.length === 0 ? `Geotab pending · ${PULLED.geotabDay}` : `${flagged.length} van${flagged.length === 1 ? "" : "s"} short or idle · ${PULLED.geotabDay}`,
+      body: VANS.length === 0 ? `${PULLED.geotabPulled}. Book is ${num.format(hire)} units on hire.` : `${PULLED.geotabDay} fleet: ${VANS.filter((v) => v.trips > 0).length} of ${VANS.length} vans, ${num.format(VANS.reduce((t, v) => t + v.trips, 0))} trips, ${num.format(Math.round(VANS.reduce((t, v) => t + v.miles, 0)))} miles. ${flagText}. Book is ${num.format(hire)} units on hire.`,
     },
   ];
 }
