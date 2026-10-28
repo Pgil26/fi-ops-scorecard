@@ -393,7 +393,7 @@ function RegionalView({ selectedId, onPick }: { selectedId?: string; onPick: (id
       <p className="mt-2 text-xs text-muted">
         Regions follow the regional executive workbook. Unassigned = locations the workbook leaves out (Tampa, Sao Paulo) and vans with no
         location (Parked Van). RouteMap pairs are customers / units. Salesforce refresh logs and RouteMap units are separate systems — don’t add them.
-        Won day and closed no aren’t in the Salesforce pull, so they show —. Click a region to see its locations.
+        Won day and closed no aren’t in the Salesforce pull, so they show —. North Boston (new) sits in East Coast; it has no RouteMap or Geotab data yet, so those cells show —. Click a region to see its locations.
       </p>
     </>
   );
@@ -544,7 +544,7 @@ export function OpsBoard() {
       <p className="mt-5 rounded-card bg-forest px-4 py-4 text-base leading-relaxed text-card">
         <span className="font-semibold">{scope}.</span>{" "}
         {num.format(totals.hire)} units on hire
-        {selected ? ` (${share(totals.hire, companyHire)} of the company)` : " across 21 locations"}.
+        {selected ? ` (${share(totals.hire, companyHire)} of the company)` : ` across ${LOCATIONS.length} locations`}.
         RouteMap {PULLED.routeDay}: {num.format(totals.routeDayCustomers)} customers / {num.format(totals.routeDayUnits)} units; {PULLED.routeMtdLabel}: {num.format(totals.routeMtdCustomers)} customers / {num.format(totals.routeMtdUnits)} units, {num.format(totals.routePending)} pending. {PULLED.sfRefreshDay} Salesforce
         refreshes: {num.format(totals.sfDayRows)} logs, {num.format(totals.sfDayUnits)} units. Open trials{" "}
         {num.format(totals.trial + totals.collectTrial)}.

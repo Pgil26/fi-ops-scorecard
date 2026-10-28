@@ -1,6 +1,7 @@
 /** Location → region mapping, from Patrick's "FI OPS | Regional Executive View" workbook (Oct 2026).
  * Regions and member order follow the workbook tabs exactly. Workbook excludes Tampa and São Paulo;
- * they (and any new location) roll into "Unassigned". LA/OC is one market (Orange County row).
+ * they (and any new location) roll into "Unassigned".
+ * North Boston (new Oct 2026, SF owner "North Boston FI") added to East Coast with NY/NJ; no RouteMap/Geotab data yet. LA/OC is one market (Orange County row).
  * Matching is by normalized name, so Salesforce names, RouteMap labels (Newyork, Sanfrancisco,
  * Fortworth, Seattle…) and workbook labels all resolve. Daily refreshes reuse this automatically.
  */
@@ -10,7 +11,7 @@ export type RegionId = "east" | "central" | "west" | "private";
 export const UNASSIGNED = { id: "unassigned", name: "Unassigned" } as const;
 
 export const REGIONS: { id: RegionId; name: string; locations: string[] }[] = [
-  { id: "east", name: "East Coast", locations: ["new-york", "new-jersey", "atlanta", "fort-lauderdale"] },
+  { id: "east", name: "East Coast", locations: ["new-york", "new-jersey", "atlanta", "fort-lauderdale", "north-boston"] },
   { id: "central", name: "Central", locations: ["denver", "fort-worth", "dallas", "chicago"] },
   { id: "west", name: "West Coast", locations: ["orange-county", "san-francisco", "san-diego", "phoenix"] },
   { id: "private", name: "Private Businesses", locations: ["austin", "san-antonio", "portland", "puget-sound", "houston", "vancouver", "toronto"] },
@@ -20,6 +21,7 @@ export const REGIONS: { id: RegionId; name: string; locations: string[] }[] = [
 const ALIASES: Record<string, string> = {
   newyork: "new-york", nyc: "new-york", nycnewyork: "new-york", ny: "new-york",
   newjersey: "new-jersey", newjerseysouth: "new-jersey", nj: "new-jersey", njsouth: "new-jersey",
+  northboston: "north-boston", northbostonfi: "north-boston", nboston: "north-boston", boston: "north-boston",
   atlanta: "atlanta", atl: "atlanta",
   fortlauderdale: "fort-lauderdale", ftlauderdale: "fort-lauderdale",
   denver: "denver",
