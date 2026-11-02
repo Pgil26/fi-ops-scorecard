@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<!--
+  Self-contained units-on-hire page. It lives in public/ so
+  scripts/publish-pages.sh keeps it (that script deletes docs/ and rebuilds
+  from the Vite output, which copies public/), and in docs/ so GitHub Pages
+  serves it before the next scorecard rebuild. Summary figures only.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>UOH deep dive</title>
+<meta name="description" content="Floral Image units on hire, 2 November 2026. 7,457 units and 4,425 active accounts across 20 locations. Tampa and Sao Paulo excluded. USD and CAD are not converted.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%231f4d3a'/%3E%3Cpath d='M8 22V10h3.2v9.2H21V22H8z' fill='%23f4f1ea'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<div class="wrap">
+<header class="mast">
+  <p class="eyebrow">Floral Image · 2 November 2026</p>
+  <h1>UOH deep dive</h1>
+  <p class="lede">Units on hire for 20 locations. Tampa and Sao Paulo are excluded. Prices stay in the currency they were billed — US dollars and Canadian dollars are not converted, and dollar totals are not mixed.</p>
+  <nav class="toc" aria-label="On this page">
+    <a href="#locations">Locations</a>
+    <a href="#size">Price by size</a>
+    <a href="#start-year">Start year</a>
+    <a href="#matrix">Location × year</a>
+    <a href="#findings">Findings</a>
+    <a href="#notes">Notes</a>
+  </nav>
+</header>
+
+<main id="content">
+  <section class="kpis" aria-label="Headline totals">
+    <article class="kpi">
+      <p class="kpi-label">Units on hire</p>
+      <p class="kpi-value">7,457</p>
+      <p class="kpi-note">20 locations</p>
+    </article>
+    <article class="kpi">
+      <p class="kpi-label">Active accounts</p>
+      <p class="kpi-value">4,425</p>
+      <p class="kpi-note">Closed Won book</p>
+    </article>
+    <article class="kpi">
+      <p class="kpi-label">Average tenure</p>
+      <p class="kpi-value">57.4<span class="unit"> mo</span></p>
+      <p class="kpi-note">Earliest active line</p>
+    </article>
+    <article class="kpi">
+      <p class="kpi-label">USD avg / account</p>
+      <p class="kpi-value">$88.34</p>
+      <p class="kpi-note">3,570 accounts · not converted</p>
+    </article>
+    <article class="kpi">
+      <p class="kpi-label">CAD avg / account</p>
+      <p class="kpi-value">C$87.37</p>
+      <p class="kpi-note">855 accounts · not converted</p>
+    </article>
+  </section>
+
+  <section id="locations" aria-labelledby="loc-heading">
+    <div class="section-head">
+      <h2 id="loc-heading">By location</h2>
+      <p class="section-lead">Sort any column. Average monthly price is the location’s monthly total divided by its active accounts. Tenure is in months. A “reset” mark means the product start dates on that book look migrated, so tenure there is not comparable.</p>
+    </div>
+    <div id="location-table"></div>
+  </section>
+
+  <section id="size" aria-labelledby="size-heading">
+    <div class="section-head">
+      <h2 id="size-heading">Price per unit by size</h2>
+      <p class="section-lead">Quantity-weighted average monthly price for Small, Medium, and Large. USD and CAD are side by side and are not on a common exchange rate.</p>
+    </div>
+    <div id="size-summary" class="size-summary"></div>
+    <div id="size-table"></div>
+    <p class="fine">Three Houston units sit in Other at $50. They are outside Small, Medium, and Large. No other location has an Other unit.</p>
+  </section>
+
+  <section id="start-year" aria-labelledby="year-heading">
+    <div class="section-head section-head-split">
+      <div>
+        <h2 id="year-heading">Price per unit by start year</h2>
+        <p class="section-lead">Average price per unit by the year an account’s current tenure started, for all sizes and for each size. Start year is the year of the earliest active line’s product start date.</p>
+      </div>
+      <div class="toggle" role="group" aria-label="Currency">
+        <button type="button" id="cur-usd" aria-pressed="true">USD</button>
+        <button type="button" id="cur-cad" aria-pressed="false">CAD</button>
+      </div>
+    </div>
+    <div id="legend" class="legend"></div>
+    <div class="chart-card">
+      <div class="chart-scroll">
+        <div id="chart"></div>
+      </div>
+      <div id="readout" class="readout" aria-live="polite"></div>
+      <p id="chart-caption" class="chart-caption"></p>
+    </div>
+    <div id="cohorts" class="cohorts"></div>
+    <p id="cohort-note" class="fine"></p>
+    <div id="year-table"></div>
+  </section>
+
+  <section id="matrix" aria-labelledby="matrix-heading">
+    <div class="section-head">
+      <h2 id="matrix-heading">Location × start year</h2>
+      <p class="section-lead">USD only. Each cell is the average price per unit, with the unit count underneath. The units in a row add up to that location’s units on hire. Toronto and Vancouver are CAD, so they are not in this grid.</p>
+    </div>
+    <div id="matrix-table"></div>
+  </section>
+
+  <section id="findings" aria-labelledby="findings-heading">
+    <h2 id="findings-heading">Findings</h2>
+    <div class="prose">
+      <p>Older US accounts — start years 2013 through 2019 — average <strong>$50.07</strong> per unit. Accounts that started in 2020–2023 average <strong>$53.64</strong>. Starts from 2024 through 2026 drop to <strong>$51.54</strong>. The newest US book is still above the oldest cohort, and below the 2020–2023 peak. Those three figures are unit-weighted averages from the start-year summary.</p>
+      <p>Small units follow the “newer is pricier” pattern. On the US book, small-unit prices sit in the mid-$30s through the middle of the last decade and in the mid-$40s for recent starts (2025 is $46.92, 2026 is $46.05). Large units on recent starts are cheaper. After a 2023 peak of $68.95, large-unit prices are $54.76 in 2024, $52.86 in 2025, and $54.86 in 2026.</p>
+      <p>CAD shows no clear trend. The all-sizes average moves between about C$53 and C$61 depending on the year, without the US step up and the later drop. The same era cuts land at C$56.05 (2015–2019), C$55.76 (2020–2023), and C$54.54 (2024–2026).</p>
+    </div>
+  </section>
+
+  <section id="notes" aria-labelledby="notes-heading">
+    <h2 id="notes-heading">Notes and method</h2>
+    <dl class="notes">
+      <div>
+        <dt>What a unit is</dt>
+        <dd>Units are active line items on Closed Won opportunities in Salesforce: the sum of line quantity where product status is Active and the opportunity stage is Closed Won. This cut is 7,457 units on 7,380 active line items.</dd>
+      </div>
+      <div>
+        <dt>Tenure</dt>
+        <dd>Tenure is measured from the earliest active line’s product start date to 2 November 2026. If that date is missing, the earliest Closed Won close date is used. Months are days divided by 30.4375. It is the age of the oldest line still active, so it can understate the relationship when earlier lines were replaced.</dd>
+      </div>
+      <div>
+        <dt>Start dates that look reset</dt>
+        <dd>Start dates appear reset for North Boston, Fort Lauderdale, San Antonio, and Vancouver. Older accounts in those cities are pushed into recent years, and the very short tenures (North Boston 1.4 months, Fort Lauderdale 11.8, San Antonio 19.1, Vancouver 23.9) should be read with that in mind. Vancouver is CAD, so it is marked on the location table and not on the USD cross grid.</dd>
+      </div>
+      <div>
+        <dt>Price</dt>
+        <dd>Monthly price is the line total (unit price times quantity), treated as the monthly hire rate. Average per account is the location monthly total divided by active accounts. Average price per unit, including by size, is quantity-weighted: total price divided by total quantity.</dd>
+      </div>
+      <div>
+        <dt>Currency</dt>
+        <dd>Toronto and Vancouver are Canadian dollars. Every other location in this cut is US dollars. Currencies are not converted. Do not add a USD dollar total to a CAD dollar total.</dd>
+      </div>
+      <div>
+        <dt>Scope</dt>
+        <dd>Pulled 2 November 2026, summary tables only. Tampa and Sao Paulo are excluded. This page does not list accounts or customers. A handful of active lines have a zero or blank price, or a quantity of zero or less; they stay in the counts and the averages.</dd>
+      </div>
+    </dl>
+  </section>
+</main>
+
+<footer class="colophon">
+  <p>Floral Image · UOH deep dive · 2 November 2026. Summary figures only.</p>
+  <p><a href="../">FI Ops scorecard</a></p>
+</footer>
+</div>
+<noscript>
+  <p class="noscript">Sorting, the chart, and the detail tables on this page need JavaScript. The headline totals and the findings above are the full result.</p>
+</noscript>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
