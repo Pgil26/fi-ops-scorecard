@@ -1,0 +1,14 @@
+{
+  "_readme": "Hand-edited Geotab fleet context. Device to location tags come from regions.ts VAN_LOCATIONS plus deviceLocations below (city-named devices). Do not edit regions.ts from scripts.",
+  "fleetTotalEstimate": 21,
+  "fleetSource": "Nov 27, 2026 meeting with Mark Traylor: about 21 vans in the fleet, about 3 more to turn in, leases start expiring June 2027. Not a confirmed roster.",
+  "deviceLocations": {
+    "1053": "chicago",
+    "1092": "fort-lauderdale",
+    "4345": "new-jersey",
+    "6318": "orange-county",
+    "6343": "fort-worth",
+    "6537": "phoenix"
+  },
+  "lookbackWeekdays": 20
+}

@@ -18,11 +18,10 @@ import {
   Truck,
 } from "lucide-react";
 import {
-  LOCATIONS,
+  LOCATIONS as ALL_LOCATIONS,
   PHOTO_AUDIT,
   PULLED,
   VANS,
-  findLocation,
   num,
   onHire,
   usd,
@@ -30,6 +29,16 @@ import {
   type VanRow,
 } from "@/data/ops";
 import { REGIONS, UNASSIGNED, regionFor, vanLocationId } from "@/data/regions";
+import { BoardExtras, BoardExtrasNav } from "@/components/board-extras";
+import { FLEET } from "@/data/fleet";
+
+/** Nov 27, 2026 (Mark Traylor meeting): São Paulo is excluded from the whole board. */
+export const EXCLUDED_LOCATIONS = new Set(["sao-paulo"]);
+const LOCATIONS = ALL_LOCATIONS.filter((row) => !EXCLUDED_LOCATIONS.has(row.id));
+function findLocation(id: string | undefined) {
+  if (!id) return undefined;
+  return LOCATIONS.find((row) => row.id === id);
+}
 
 type Tone = "neutral" | "good" | "watch" | "bad";
 
@@ -217,7 +226,7 @@ function locationNotes(row: LocationRow, companyHire: number, vans: VanRow[]) {
     notes.push({
       tone: "bad",
       title: "Losses and cancels",
-      body: `${num.format(row.lostWeekDeals)} opportunities lost this week (${num.format(row.lostMonthDeals)} in October). ${num.format(row.cancelDeals)} deals sit in Collect/Cancel (${usd.format(row.cancelAmt)}). ${num.format(row.cancelMoved)} of those changed stage in October and are still there.`,
+      body: `${num.format(row.lostWeekDeals)} opportunities lost this week (${num.format(row.lostMonthDeals)} in ${PULLED.monthLabel}). ${num.format(row.cancelDeals)} deals sit in Collect/Cancel (${usd.format(row.cancelAmt)}). ${num.format(row.cancelMoved)} of those changed stage in ${PULLED.monthLabel} and are still there.`,
     });
   }
   if (!vans.length) {
@@ -251,7 +260,7 @@ function companyNotes(rows: LocationRow[]) {
     {
       tone: "good" as Tone,
       title: `Closed won · ${PULLED.weekLabel}`,
-      body: `${num.format(wonWeek)} closed-won units this week, ${num.format(wonMonth)} in ${PULLED.monthLabel}, by product start date. ${topWon?.name ?? ""} leads October with ${num.format(topWon?.wonMonth ?? 0)}.`,
+      body: `${num.format(wonWeek)} closed-won units this week, ${num.format(wonMonth)} in ${PULLED.monthLabel}, by product start date. ${topWon?.name ?? ""} leads ${PULLED.monthLabel} with ${num.format(topWon?.wonMonth ?? 0)}.`,
     },
     {
       tone: "watch" as Tone,
@@ -266,7 +275,7 @@ function companyNotes(rows: LocationRow[]) {
     {
       tone: "bad" as Tone,
       title: VANS.length === 0 ? `Geotab pending · ${PULLED.geotabDay}` : `${flagged.length} van${flagged.length === 1 ? "" : "s"} short or idle · ${PULLED.geotabDay}`,
-      body: VANS.length === 0 ? `${PULLED.geotabPulled}. Book is ${num.format(hire)} units on hire.` : `${PULLED.geotabDay} fleet: ${VANS.filter((v) => v.trips > 0).length} of ${VANS.length} vans, ${num.format(VANS.reduce((t, v) => t + v.trips, 0))} trips, ${num.format(Math.round(VANS.reduce((t, v) => t + v.miles, 0)))} miles. ${flagText}. Book is ${num.format(hire)} units on hire.`,
+      body: VANS.length === 0 ? `${PULLED.geotabPulled}. Book is ${num.format(hire)} units on hire.` : `${PULLED.geotabDay}: ${VANS.filter((v) => v.trips > 0).length} of ${VANS.length} Geotab-tracked vans ran (Geotab covers ${FLEET.tracked} of about ${FLEET.fleetTotalEstimate} vans, so idle counts are not the whole fleet), ${num.format(VANS.reduce((t, v) => t + v.trips, 0))} trips, ${num.format(Math.round(VANS.reduce((t, v) => t + v.miles, 0)))} miles. ${flagText}. Book is ${num.format(hire)} units on hire.`,
     },
   ];
 }
@@ -349,7 +358,7 @@ function RegionalView({ selectedId, onPick }: { selectedId?: string; onPick: (id
               <th className={head}>Lost mo deals/units</th>
               <th className={head}>Refresh logs/units mo</th>
               <th className={head}>{PULLED.routeDay}</th>
-              <th className={head}>Oct MTD</th>
+              <th className={head}>Month to date</th>
               <th className={head}>Pending</th>
               <th className={head}>Vans out</th>
               <th className={head}>Trips</th>
@@ -391,7 +400,7 @@ function RegionalView({ selectedId, onPick }: { selectedId?: string; onPick: (id
         </table>
       </div>
       <p className="mt-2 text-xs text-muted">
-        Regions follow the regional executive workbook. Unassigned = locations the workbook leaves out (Tampa, Sao Paulo) and vans with no
+        Regions follow the regional executive workbook. Unassigned = locations the workbook leaves out (Tampa; São Paulo is excluded from this board) and vans with no
         location (Parked Van). RouteMap pairs are customers / units. Salesforce refresh logs and RouteMap units are separate systems — don’t add them.
         Won day and closed no aren’t in the Salesforce pull, so they show —. North Boston (new) sits in East Coast; it has no RouteMap or Geotab data yet, so those cells show —. Click a region to see its locations.
       </p>
@@ -492,7 +501,7 @@ export function OpsBoard() {
           </p>
           <h1 className="mt-1 font-display text-4xl tracking-tight text-ink">Executive board</h1>
           <p className="mt-2 max-w-xl text-sm text-pretty text-muted">
-            October totals and the previous route day. Numbers are in the page, so this link
+            Month-to-date totals, the previous route day, and the rep and franchisee report card. São Paulo is excluded. Numbers are in the page, so this link
             does not need Salesforce, RouteMap, Geotab, or a Grok login.
           </p>
         </div>
@@ -541,6 +550,8 @@ export function OpsBoard() {
         </div>
       </div>
 
+      <BoardExtrasNav />
+
       <p className="mt-5 rounded-card bg-forest px-4 py-4 text-base leading-relaxed text-card">
         <span className="font-semibold">{scope}.</span>{" "}
         {num.format(totals.hire)} units on hire
@@ -552,7 +563,7 @@ export function OpsBoard() {
 
       <section className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label="Units on hire" value={num.format(totals.hire)} detail={`${num.format(totals.inactive)} inactive on won deals`} tone="neutral" />
-        <Tile label="Closed won" value={num.format(totals.wonWeek)} detail={`${num.format(totals.wonMonth)} units in October · start date`} tone="good" />
+        <Tile label="Closed won" value={num.format(totals.wonWeek)} detail={`${num.format(totals.wonMonth)} units in ${PULLED.monthLabel} · start date`} tone="good" />
         <Tile label="Open trials" value={num.format(totals.trial + totals.collectTrial)} detail={`${num.format(totals.trial)} trial · ${num.format(totals.collectTrial)} collect trial`} tone="good" />
         <Tile
           label="At risk"
@@ -573,7 +584,7 @@ export function OpsBoard() {
           tone="neutral"
         />
         <Tile
-          label="Oct MTD RouteMap"
+          label="RouteMap month to date"
           value={num.format(totals.routeMtdCustomers)}
           detail={`customers / ${num.format(totals.routeMtdUnits)} units · ${num.format(totals.routePending)} pending · ${PULLED.routeMtdLabel}`}
           tone="neutral"
@@ -581,7 +592,7 @@ export function OpsBoard() {
         <Tile
           label={selected ? "Vans tagged here" : "Vans out"}
           value={selected ? `${vansOut}/${vans.length || 0}` : `${vansOut}/${VANS.length}`}
-          detail={`${num.format(vanTrips)} trips · ${vanMiles.toFixed(1)} miles`}
+          detail={`${num.format(vanTrips)} trips · ${vanMiles.toFixed(1)} miles · Geotab on ${FLEET.tracked} of ~${FLEET.fleetTotalEstimate} vans`}
           tone={vans.some((van) => van.flag !== "ok") ? "watch" : "neutral"}
         />
       </section>
@@ -598,7 +609,7 @@ export function OpsBoard() {
       </h2>
       <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-5">
         <div className="min-w-0 lg:col-span-2">
-          <Panel title="Units on hire" source="Salesforce · live Tuesday morning">
+          <Panel title="Units on hire" source={`Salesforce · ${PULLED.sales}`}>
             {selected ? (
               <div className="space-y-3 text-sm">
                 <p className="font-display text-4xl tabular-nums text-ink">{num.format(onHire(selected))}</p>
@@ -607,8 +618,8 @@ export function OpsBoard() {
                   Weekly rate {usd.format(selected.weekly)}. Monthly rate {usd.format(selected.monthly)}.
                 </p>
                 <p className="text-muted">
-                  Closed won by start date: {num.format(selected.wonWeek)} this week, {num.format(selected.wonMonth)} in October.
-                  New trials: {num.format(selected.trialsWeek)} this week, {num.format(selected.trialsMonth)} in October.
+                  Closed won by start date: {num.format(selected.wonWeek)} this week, {num.format(selected.wonMonth)} in {PULLED.monthLabel}.
+                  New trials: {num.format(selected.trialsWeek)} this week, {num.format(selected.trialsMonth)} in {PULLED.monthLabel}.
                 </p>
               </div>
             ) : (
@@ -617,16 +628,17 @@ export function OpsBoard() {
           </Panel>
         </div>
         <div className="min-w-0 lg:col-span-3">
-          <Panel title="October field work and sales" source={`RouteMap ${PULLED.routeMtdLabel} · Salesforce through ${PULLED.sfRefreshDay}`}>
+          <Panel title={`${PULLED.monthLabel} field work and sales`} source={`RouteMap ${PULLED.routeMtdLabel} · Salesforce through ${PULLED.sfRefreshDay}`}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-xl text-left text-sm">
                 <thead>
                   <tr className="border-b border-line text-xs tracking-wide text-muted uppercase">
                     <th className="py-2 pr-3 font-semibold">Location</th>
-                    <th className="py-2 pr-3 text-right font-semibold">Route customers</th>
-                    <th className="py-2 pr-3 text-right font-semibold">Route units</th>
+                    <th className="py-2 pr-3 text-right font-semibold">Units on hire</th>
+                    <th className="py-2 pr-3 text-right font-semibold">RouteMap customers MTD</th>
+                    <th className="py-2 pr-3 text-right font-semibold">RouteMap units changed MTD</th>
                     <th className="py-2 pr-3 text-right font-semibold">Pending</th>
-                    <th className="py-2 pr-3 text-right font-semibold">SF refresh units</th>
+                    <th className="py-2 pr-3 text-right font-semibold">SF refresh units MTD</th>
                     <th className="py-2 text-right font-semibold">Won units</th>
                   </tr>
                 </thead>
@@ -640,6 +652,7 @@ export function OpsBoard() {
                           </button>
                           {row.routeName ? <span className="ml-1 text-xs text-muted">RouteMap: {row.routeName}</span> : null}
                         </td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{num.format(onHire(row))}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{row.routeMtdCustomers == null ? "—" : num.format(row.routeMtdCustomers)}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{row.routeMtdUnits == null ? "—" : num.format(row.routeMtdUnits)}</td>
                         <td className={`py-2 pr-3 text-right tabular-nums ${row.routeMtdPending ? "font-semibold text-watch" : ""}`}>
@@ -652,6 +665,7 @@ export function OpsBoard() {
                   )}
                   <tr className="font-semibold">
                     <td className="py-2 pr-3">Total shown</td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{num.format(totals.hire)}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">—</td>
                     <td className="py-2 pr-3 text-right tabular-nums">—</td>
                     <td className="py-2 pr-3 text-right tabular-nums">—</td>
@@ -663,7 +677,7 @@ export function OpsBoard() {
             </div>
             <p className="mt-3 text-xs leading-relaxed text-muted">
               RouteMap units and Salesforce refresh units are different systems. Do not add them.
-              RouteMap is the Daily Changeover (customers / units). Salesforce is Product Refresh logs, Oct 1–12.
+              RouteMap is the Daily Changeover (customers / units changed over this month), not units on hire. Salesforce is Product Refresh logs this month. Units on hire is the Salesforce won book.
               Closed won uses product start date.
             </p>
           </Panel>
@@ -830,6 +844,8 @@ export function OpsBoard() {
 
       <RegionalView selectedId={selected?.id} onPick={(id) => setLocation(id)} />
 
+      <BoardExtras selectedId={selected?.id} />
+
       <h2 className="mt-8 flex items-center gap-2 text-xs font-semibold tracking-widest text-muted uppercase">
         <Building2 className="size-3.5" aria-hidden="true" />
         Every location
@@ -838,7 +854,7 @@ export function OpsBoard() {
         {(
           [
             ["hire", "On hire"],
-            ["route", "October RouteMap"],
+            ["route", "RouteMap MTD"],
             ["trials", "Open trials"],
             ["won", "Won this month"],
           ] as const
@@ -869,7 +885,7 @@ export function OpsBoard() {
               <th className="px-3 py-3 text-right font-semibold">Won mo</th>
               <th className="px-3 py-3 text-right font-semibold">Lost mo</th>
               <th className="px-3 py-3 text-right font-semibold">Day route units</th>
-              <th className="px-3 py-3 text-right font-semibold">Oct MTD units</th>
+              <th className="px-3 py-3 text-right font-semibold">RouteMap MTD units</th>
             </tr>
           </thead>
           <tbody>
@@ -916,7 +932,7 @@ export function OpsBoard() {
               <li>Open trials {num.format(selected.trial + selected.collectTrial)}</li>
               <li>Lead pending {num.format(selected.pending)}</li>
               <li>Collect/cancel stock {num.format(selected.cancelDeals)} · {usd.format(selected.cancelAmt)}</li>
-              <li>Lost in October {num.format(selected.lostMonthDeals)} deals · {num.format(selected.lostMonthUnits)} units</li>
+              <li>Lost in {PULLED.monthLabel} {num.format(selected.lostMonthDeals)} deals · {num.format(selected.lostMonthUnits)} units</li>
             </ul>
           </article>
           <article className="rounded-card border border-line bg-card p-4">
@@ -928,7 +944,7 @@ export function OpsBoard() {
                 {PULLED.routeDay} {selected.routeDayCustomers == null ? "no row" : `${num.format(selected.routeDayCustomers)} customers / ${num.format(selected.routeDayUnits ?? 0)} units`}
               </li>
               <li>
-                Oct MTD {selected.routeMtdCustomers == null ? "no row" : `${num.format(selected.routeMtdCustomers)} customers / ${num.format(selected.routeMtdUnits ?? 0)} units`}
+                Month to date {selected.routeMtdCustomers == null ? "no row" : `${num.format(selected.routeMtdCustomers)} customers / ${num.format(selected.routeMtdUnits ?? 0)} units`}
               </li>
               <li>Pending {selected.routeMtdPending == null ? "—" : num.format(selected.routeMtdPending)}</li>
             </ul>
@@ -972,7 +988,7 @@ export function OpsBoard() {
           RouteMap Daily Changeover, pulled {PULLED.routePulled}. RouteMap pairs are customers / units. {PULLED.routeMtdLabel}.
           Geotab advanced detailed trips, {PULLED.geotabPulled}, {PULLED.geotabDay} only. Salesforce Product Refresh for {PULLED.sfRefreshDay} is a
           separate log from RouteMap — {num.format(sum(LOCATIONS, (row) => row.sfDayUnits))} units on {num.format(sum(LOCATIONS, (row) => row.sfDayRows))} logs.
-          October Salesforce refresh logs: {num.format(sum(LOCATIONS, (row) => row.sfMtdUnits))} units.
+          {PULLED.monthLabel} Salesforce refresh logs: {num.format(sum(LOCATIONS, (row) => row.sfMtdUnits))} units.
         </p>
       </footer>
     </main>

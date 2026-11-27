@@ -22,3 +22,33 @@ To refresh the numbers, update `src/data/ops.ts` first, then run the above.
 What the script does: installs dependencies if needed, builds with `PAGES_BASE=/fi-ops-scorecard/` (which makes `vite.config.ts` use that base, prerender `/` to static HTML, and write to `dist/` instead of the committed `.vercel/output`), replaces `docs/` with the static output (keeping `docs/.nojekyll`), points favicon / `/__grok/*` links at `/fi-ops-scorecard/`, writes a static web manifest, and fails if `docs/index.html` references any local path outside the base or any missing file.
 
 Normal `npm run build` (Vercel) is unchanged: base `/`, no prerender.
+
+## Board extras (added Nov 27, 2026 — Mark Traylor meeting)
+
+New sections under the regional view, each with an anchor: `#report-card` (rep + franchisee expected vs actual, day / week / month), `#refresh-plan` (refresh completion vs plan by location and week), `#hybrid-benchmark` (refresh % of pace vs trials), `#data-checks` (Toronto / Atlanta explanations), `#geotab-coverage`, `#uoh-history` (Dec 31 snapshots since 2013 incl. closed accounts) and `#single-multi` (single- vs multi-unit pricing vs the $60/$70/$80 book). São Paulo is excluded from the whole board (`EXCLUDED_LOCATIONS` in `ops-board.tsx`).
+
+Hand-edited config (never overwritten by scripts):
+- `src/data/people.config.json` — roster, buckets (sales / refresh / hybrid / franchisee), Salesforce Sales Person names, refresh logins, refresh shares, holidays and **placeholder** targets.
+- `src/data/fleet.config.json` — fleet size estimate and city-named Geotab device tags. Van tags approved by Patrick stay in `regions.ts` (`VAN_LOCATIONS`); scripts only read that file.
+
+Generated files (do not edit): `src/data/activity.ts`, `src/data/fleet.ts`, `src/data/uoh-history.ts`, written by `scripts/fi-ops/board_extras.py`.
+
+### Daily step (weekday digest routine, after ops.ts is rebuilt and before publish-pages.sh)
+```bash
+DAY=2026-11-26                          # coverage day
+RAW=/workspace/fi_digest/$DAY/raw
+python3 scripts/fi-ops/board_extras.py queries --day $DAY   # prints 6 SOQL queries
+# run each with user-salesforce-reads soqlQuery (write_to_file) and save the result as $RAW/act_<name>.txt (or .json):
+#   act_trials, act_refresh, act_fu_due, act_moves, act_overdue, act_won
+python3 scripts/fi-ops/board_extras.py activity --day $DAY --raw $RAW
+python3 scripts/fi-ops/board_extras.py fleet --day $DAY     # reads /workspace/geotab-daily-start-end-local-*.csv
+```
+Any missing `act_*` file marks the report card **pending** (no older day is reused). `activity` reads units on hire from `ops.ts`, so run it after the ops.ts rewrite.
+
+### Monthly step (first weekday of the month, or on request): units-on-hire history
+```bash
+python3 scripts/fi-ops/board_extras.py uoh-query            # first page; then --after <last Id> for each next page
+# save each 2,000-row page as /workspace/fi_digest/uoh_history/<pull-date>/pNN.json (about 16 pages)
+python3 scripts/fi-ops/board_extras.py uoh --raw /workspace/fi_digest/uoh_history/<pull-date> --pulled <pull-date>
+```
+Prices use row-level `convertCurrency(UnitPrice)`, never SOQL SUM aggregates. The section shows its pull date.

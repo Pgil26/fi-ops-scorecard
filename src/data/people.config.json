@@ -1,0 +1,41 @@
+{
+  "_readme": "Hand-edited roster + targets for the rep / franchisee report card. NOT overwritten by the daily build. Edit, then rerun scripts/fi-ops/board_extras.py activity (the weekday routine does this automatically). Region and van mappings stay in regions.ts; do not copy them here.",
+  "targetsArePlaceholders": true,
+  "targetsNote": "PLACEHOLDER targets (not agreed). Trials/day by bucket are placeholders until Patrick sets them. Refresh expectation is plan-based: units on hire at the location x refreshCyclesPerMonth, spread over the month's working days, times the person's refreshShare. Follow-up expectation = leads whose Follow-Up Date falls in the period.",
+  "refreshCyclesPerMonth": 1,
+  "holidays": ["2026-11-26", "2026-12-25", "2027-01-01"],
+  "excludeLocations": ["sao-paulo"],
+  "bucketDefaults": {
+    "sales": { "trialsPerDay": 3, "refreshShare": 0 },
+    "hybrid": { "trialsPerDay": 1, "refreshShare": 1 },
+    "refresh": { "trialsPerDay": 0, "refreshShare": 1 },
+    "franchisee": { "trialsPerDay": 1, "refreshShare": 1 }
+  },
+  "people": [
+    { "id": "gabe-emmons", "name": "Gabe Emmons", "locationId": "atlanta", "bucket": "sales", "bucketSource": "confirmed", "salesNames": ["Gabe Emmons"], "refreshLogins": [] },
+    { "id": "gabby", "name": "Gabby", "locationId": "atlanta", "bucket": "refresh", "bucketSource": "assumed", "salesNames": [], "refreshLogins": ["Gabby", "gcastillo@floralimage.com"] },
+    { "id": "pedro-zorrilla", "name": "Pedro Zorrilla", "locationId": "new-york", "bucket": "sales", "bucketSource": "confirmed", "salesNames": ["Pedro Zorrilla"], "refreshLogins": [], "note": "Sales for NY and NJ; trials counted wherever he is the Sales Person." },
+    { "id": "jose-moure", "name": "Jose Moure", "locationId": "new-york", "planLocations": ["new-york", "new-jersey"], "bucket": "refresh", "bucketSource": "assumed", "salesNames": [], "refreshLogins": ["Jose Moure (NYC)", "Jose Moure (New Jersey)"], "note": "Refresh logins for both New York and New Jersey." },
+    { "id": "tom-graham", "name": "Tom Graham", "locationId": "new-jersey", "bucket": "hybrid", "bucketSource": "confirmed", "salesNames": ["Tom Graham"], "refreshLogins": [], "refreshShare": null, "note": "No Salesforce refresh login in Tom's name; New Jersey refreshes are logged as 'Jose Moure (New Jersey)'. Refresh target not set until confirmed." },
+    { "id": "soraya-bryant", "name": "Soraya Bryant", "locationId": "fort-lauderdale", "bucket": "hybrid", "bucketSource": "confirmed", "salesNames": ["Soraya Bryant"], "refreshLogins": ["sorayabryant@floralimage.com", "Ft Lauderdale Refresh Rep"], "note": "Generic 'Ft Lauderdale Refresh Rep' login attributed to Soraya (assumed: she drives the FTL Geotab van)." },
+    { "id": "angela-genereux", "name": "Angela Genereux", "locationId": "fort-lauderdale", "bucket": "sales", "bucketSource": "assumed", "salesNames": ["Angela Genereux"], "refreshLogins": [] },
+    { "id": "emily-brooks", "name": "Emily Brooks", "locationId": "denver", "bucket": "hybrid", "bucketSource": "confirmed", "salesNames": ["Emily Brooks"], "refreshLogins": ["DEN switch 1"], "note": "Generic 'DEN switch 1' login attributed to Emily (assumed)." },
+    { "id": "sara-gorstein", "name": "Sara Gorstein", "locationId": "chicago", "bucket": "hybrid", "bucketSource": "assumed", "salesNames": ["Sara Gorstein"], "refreshLogins": ["Sara Gorstein", "sgorstein@floralimage.com"] },
+    { "id": "marie-casado", "name": "Marie Casado", "locationId": "dallas", "bucket": "refresh", "bucketSource": "assumed", "salesNames": [], "refreshLogins": ["Marie Casado"] },
+    { "id": "jd-garnett", "name": "JD Garnett", "locationId": "fort-worth", "bucket": "hybrid", "bucketSource": "assumed", "salesNames": ["JD Garnett"], "refreshLogins": ["JD Garnett"] },
+    { "id": "yolanda-rivera", "name": "Yolanda Rivera", "locationId": "orange-county", "bucket": "refresh", "bucketSource": "assumed", "salesNames": ["Yolanda Rivera"], "refreshLogins": ["yrivera@floralimage.com"], "refreshShare": null, "note": "Most Orange County refreshes are logged under generic 'LA' and 'Orange County' logins, so her share is not set." },
+    { "id": "matthew-driscoll", "name": "Matthew Driscoll", "locationId": "orange-county", "bucket": "hybrid", "bucketSource": "assumed", "salesNames": ["Matthew Driscoll"], "refreshLogins": ["mdriscoll@floralimage.com"], "refreshShare": null },
+    { "id": "valerie-kline", "name": "Valerie Kline", "locationId": "san-diego", "bucket": "refresh", "bucketSource": "assumed", "salesNames": ["Valerie Kline"], "refreshLogins": ["valerie@floralimage.com", "San Diego"] },
+    { "id": "irving-chavez", "name": "Irving Chavez", "locationId": "san-francisco", "bucket": "hybrid", "bucketSource": "assumed", "salesNames": ["Irving Chavez"], "refreshLogins": ["Irving Chavez"] }
+  ],
+  "franchisees": [
+    { "locationId": "north-boston", "owner": "Heather Forand" },
+    { "locationId": "austin", "owner": "Danny Drake" },
+    { "locationId": "san-antonio", "owner": "Danny Drake" },
+    { "locationId": "portland", "owner": "Kyla Field" },
+    { "locationId": "puget-sound", "owner": null },
+    { "locationId": "houston", "owner": null },
+    { "locationId": "vancouver", "owner": null },
+    { "locationId": "toronto", "owner": null }
+  ]
+}
