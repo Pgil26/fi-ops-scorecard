@@ -6,7 +6,8 @@ Subcommands (all write generated TS into src/data/, never touch ops.ts or region
   queries  --day D                 print the activity SOQL (JSON name->query) to run via user-salesforce-reads soqlQuery
   activity --day D --raw DIR       build src/data/activity.ts from DIR/act_<name>.(json|txt)
   fleet    --day D                 build src/data/fleet.ts from /workspace/geotab-daily-start-end-local-*.csv
-  uoh      --raw DIR --pulled DATE build src/data/uoh-history.ts from DIR/p*.json (OpportunityLineItem pages)
+  uoh      --raw DIR --pulled DATE build DIR/uoh_page_data.json from DIR/p*.json (OpportunityLineItem pages) for the
+           'Units on Hire by Location' Page (canvas daf6a31b-...). Does NOT touch the scorecard; update the Page with WriteCanvas/EditCanvas.
   uoh-query --after ID             print the line-item page SOQL (2000 rows, Id > ID)
 Rules: never invent numbers; a missing raw file makes that section 'pending' (no older day reused).
 """
@@ -367,7 +368,10 @@ def build_uoh(raw, pulled):
            " A unit is on hire at date D if Product_Start_Date__c <= D and its end date is empty or after D.\n"
            " End date = Product_Lost_Date__c, else System_Cancelled_Date__c; for non-Closed-Won stages also Opportunity Lost_Date__c, else Last_Stage_Change_Date__c.\n"
            " Prices are row-level convertCurrency(UnitPrice) (USD), never SOQL SUM aggregates.")
-    write_ts("uoh-history.ts", hdr, ts_const("UOH_HISTORY", out))
+    out["method"] = hdr.strip()
+    p = os.path.join(raw, "uoh_page_data.json")
+    json.dump(out, open(p, "w"), indent=1)
+    print("wrote", p, "- now update the Units on Hire by Location Page (EditCanvas, canvas daf6a31b-59bd-4a5b-88f5-cab878736e23); the scorecard does not use this file")
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("cmd"); ap.add_argument("--day"); ap.add_argument("--raw"); ap.add_argument("--pulled"); ap.add_argument("--after")

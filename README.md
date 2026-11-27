@@ -25,13 +25,13 @@ Normal `npm run build` (Vercel) is unchanged: base `/`, no prerender.
 
 ## Board extras (added Nov 27, 2026 — Mark Traylor meeting)
 
-New sections under the regional view, each with an anchor: `#report-card` (rep + franchisee expected vs actual, day / week / month), `#refresh-plan` (refresh completion vs plan by location and week), `#hybrid-benchmark` (refresh % of pace vs trials), `#data-checks` (Toronto / Atlanta explanations), `#geotab-coverage`, `#uoh-history` (Dec 31 snapshots since 2013 incl. closed accounts) and `#single-multi` (single- vs multi-unit pricing vs the $60/$70/$80 book). São Paulo is excluded from the whole board (`EXCLUDED_LOCATIONS` in `ops-board.tsx`).
+New sections under the regional view, each with an anchor: `#report-card` (rep + franchisee expected vs actual, day / week / month), `#refresh-plan` (refresh completion vs plan by location and week), `#hybrid-benchmark` (refresh % of pace vs trials), `#data-checks` (Toronto / Atlanta explanations) and `#geotab-coverage`. Units on hire since 2013 (Dec 31 snapshots incl. closed accounts) and single- vs multi-unit pricing are **not** on this board: they live on Patrick's Page "Units on Hire by Location — Nov 2026" (https://cursor.com/canvas/store-e6ec9570-2655-4b1d-bf99-ed134ad325f4/daf6a31b-59bd-4a5b-88f5-cab878736e23); the board only links to it. São Paulo is excluded from the whole board (`EXCLUDED_LOCATIONS` in `ops-board.tsx`).
 
 Hand-edited config (never overwritten by scripts):
 - `src/data/people.config.json` — roster, buckets (sales / refresh / hybrid / franchisee), Salesforce Sales Person names, refresh logins, refresh shares, holidays and **placeholder** targets.
 - `src/data/fleet.config.json` — fleet size estimate and city-named Geotab device tags. Van tags approved by Patrick stay in `regions.ts` (`VAN_LOCATIONS`); scripts only read that file.
 
-Generated files (do not edit): `src/data/activity.ts`, `src/data/fleet.ts`, `src/data/uoh-history.ts`, written by `scripts/fi-ops/board_extras.py`.
+Generated files (do not edit): `src/data/activity.ts`, `src/data/fleet.ts`, written by `scripts/fi-ops/board_extras.py`.
 
 ### Daily step (weekday digest routine, after ops.ts is rebuilt and before publish-pages.sh)
 ```bash
@@ -45,10 +45,10 @@ python3 scripts/fi-ops/board_extras.py fleet --day $DAY     # reads /workspace/g
 ```
 Any missing `act_*` file marks the report card **pending** (no older day is reused). `activity` reads units on hire from `ops.ts`, so run it after the ops.ts rewrite.
 
-### Monthly step (first weekday of the month, or on request): units-on-hire history
+### Monthly step (first weekday of the month, or on request): data for the Units on Hire by Location Page
 ```bash
 python3 scripts/fi-ops/board_extras.py uoh-query            # first page; then --after <last Id> for each next page
 # save each 2,000-row page as /workspace/fi_digest/uoh_history/<pull-date>/pNN.json (about 16 pages)
 python3 scripts/fi-ops/board_extras.py uoh --raw /workspace/fi_digest/uoh_history/<pull-date> --pulled <pull-date>
 ```
-Prices use row-level `convertCurrency(UnitPrice)`, never SOQL SUM aggregates. The section shows its pull date.
+This writes `/workspace/fi_digest/uoh_history/<pull-date>/uoh_page_data.json` only — it does not change the scorecard and needs no rebuild. **Then update the Page** (canvas `daf6a31b-59bd-4a5b-88f5-cab878736e23`, https://cursor.com/canvas/store-e6ec9570-2655-4b1d-bf99-ed134ad325f4/daf6a31b-59bd-4a5b-88f5-cab878736e23) with ReadCanvas + EditCanvas/WriteCanvas: replace the `SM` and `YE` arrays and the totals table in the sections "SINGLE-UNIT VS MULTI-UNIT ACCOUNTS · CURRENT BOOK" and "UNITS ON HIRE SINCE 2013 · YEAR-END SNAPSHOTS INCL. CLOSED ACCOUNTS", plus the pull date and any numbers quoted in their text. Leave the Page's other sections alone. Prices use row-level `convertCurrency(UnitPrice)`, never SOQL SUM aggregates. São Paulo excluded.
